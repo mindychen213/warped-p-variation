@@ -3,6 +3,7 @@ import collections
 import random
 import time
 import copy
+import numpy as np
 
 def p_var_backbone(path_size, p, path_dist):
     # Input:
@@ -127,77 +128,3 @@ def p_var_backbone_ref(path_size, p, path_dist):
         #print(len(optimal_partition[:j+1]), len(optimal_partition[:t_m+1] + [j]))
         #optimal_partition[:j] = optimal_partition[:t_m+1] + [j]          
     return pow(cum_p_var[-1],1./p)
-
-def p_var_points_check(p_var_ret, p, path_dist):
-    # Check the output of p_var_backbone: 
-    # whether the p-variation p_var_ret.value is indeed reached on the sequence p_var_ret.points.
-    # Return abs value of the error.
-    if len(p_var_ret.points) == 0:
-        if p_var_ret.value == -math.inf:
-            return 0
-        else:
-            return math.inf
-    if len(p_var_ret.points) == 1:
-        return math.abs(p_var_ret.value)
-    v = 0.0
-    for k in range(1, len(p_var_ret.points)):
-        v += pow(path_dist(p_var_ret.points[k-1], p_var_ret.points[k]), p)
-    return abs(v - p_var_ret.value)
-
-
-
-## Tests
-
-def ex_sq():
-    # Example: unit square
-    path = [[0,0], [0,1], [1,1], [1,0], [0,0], [0,0], [0,0], [0,0]]
-    dist = lambda a, b: math.sqrt(pow(path[b][0] - path[a][0], 2) + pow(path[b][1] - path[a][1], 2))
-
-    print(f'\nSquare path: {path}\nwith L^2 distance')
-    p = 1.0
-    while p <= 4.0:
-        pv = p_var_backbone(len(path), p, dist)
-        pv_ref = p_var_backbone_ref(len(path), p, dist)
-        pv_err = abs(pv.value - pv_ref) + p_var_points_check(pv, p, dist)
-        print(f'{p:5.2f}-variation: {pv.value:7.2f}, error {pv_err:.2e}, sequence {pv.points}')
-        p += 0.5
-
-def ex_bm():
-    # Example: Brownian motion made of iid -1/+1 increments
-    n = 2500
-    print(f'\nPoor man\'s Brownian path with {n} steps:')
-    path = [0.0] * (n + 1)
-    sigma = 1. / math.sqrt(n)
-    for k in range(1, n + 1):
-        path[k] = path[k - 1] + random.choice([-1, 1]) * sigma
-    dist = lambda a, b: abs(path[b] - path[a])
-
-    for p in [1.0, math.sqrt(2), 2.0, math.exp(1)]:
-        pv_start = time.time()
-        pv = p_var_backbone(len(path), p, dist)
-        pv_time = time.time() - pv_start
-        pv_ref_start = time.time()
-        pv_ref = p_var_backbone_ref(len(path), p, dist)
-        pv_ref_time = time.time() - pv_ref_start
-        pv_err = abs(pv.value - pv_ref) + p_var_points_check(pv, p, dist)
-        print(f'{p:5.2f}-variation: {pv.value:7.2f}, sequence length: {len(pv.points):5d}, error {pv_err:.2e}, time: {pv_time:7.2f}, reference time: {pv_ref_time:7.2f}')
-
-def ex_bm_long():
-    # Example: long Brownian motion made of iid -1/+1 increments, no error check
-    print('\nVery poor man\'s very long Brownian path:')
-    for n in [0,1,10,100,1000,10000,100000,1000000, 10000000]:
-        path = [0.0] * (n + 1)
-        sigma = 1. / math.sqrt(max(n,1))
-        for k in range(1, n + 1):
-            path[k] = path[k - 1] + random.choice([-1, 1]) * sigma
-        dist = lambda a, b: abs(path[b] - path[a])
-
-        p = 2.25
-        pv_start = time.time()
-        pv = p_var_backbone(len(path), p, dist)
-        pv_time = time.time() - pv_start
-        print(f'{n:10d} steps: {p:5.2f}-variation: {pv.value:7.2f}, sequence length: {len(pv.points):5d}, time: {pv_time:7.2f}')
-
-#ex_sq()
-#ex_bm()
-#ex_bm_long()

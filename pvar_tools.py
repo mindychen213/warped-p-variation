@@ -42,7 +42,7 @@ def p_variation_distance(path1, path2, p, depth, norm='l1'):
     dist = lambda a,b: pairwise_sig_norm(path1, path2, depth, a, b, norm)
     return p_var_backbone_ref(length, p, dist)
 
-def p_variation_distance_alexey_optim(path1, path2, p, depth, norm='l1'):
+def p_variation_distance_optim(path1, path2, p, depth, norm='l1'):
     """path1 and path2 must be numpy arrays of equal lenght. Alexey's algo.
 	return the signature p-variation distance and points of the optimal partition""" 
     assert norm in ['l1', 'l2']
@@ -52,22 +52,3 @@ def p_variation_distance_alexey_optim(path1, path2, p, depth, norm='l1'):
     dist = lambda a,b: pairwise_sig_norm(path1, path2, depth, a, b, norm)
     pv = p_var_backbone(length, p, dist)
     return pv.value, pv.points
-
-#def p_variation_distance_warwick(path1, path2, p, depth, norm='l1'):
-#    """path1 and path2 must be numpy arrays of equal lenght. Warwick guy's algo.
-#       return the signature p-variation distance and points of the optimal partition""" 
-#    assert norm in ['l1', 'l2']
-#    assert path1.shape[0] == path2.shape[0]
-#    assert path1.shape[1] == path2.shape[1]
-#    dist = lambda a,b: pairwise_sig_norm(path1, path2, depth, a, b, norm)
-#    length = path1.shape[0]
-#    optimal_partition = [0, 1]
-#    p_variation = [dist(0,1)]
-#    for i in range(1, length):
-#        a = []
-#        for j in range(i):
-#            a.append(p_variation[j] + dist(j,i+1)**p)
-#        t_m, a_m = max(enumerate(a), key=lambda x: x[1])
-#        p_variation.append(a_m)
-#        optimal_partition = optimal_partition[:t_m] + [i]
-#    return pow(p_variation[-1],1./p), optimal_partition
