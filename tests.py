@@ -8,7 +8,7 @@ class Tests(unittest.TestCase):
     def _p_var_points_check(self, p_var_ret, p, path_dist):
         # Check the output of p_var_backbone: Returns abs value of the error.
         # Whether the p-variation p_var_ret.value is indeed reached on the sequence p_var_ret.points.
-        v = 0.0
+        v = 0.
         for k in range(1, len(p_var_ret.points)):
             v += pow(path_dist(p_var_ret.points[k-1], p_var_ret.points[k]), p)
         return abs(pow(v,1./p) - p_var_ret.value)
@@ -19,7 +19,7 @@ class Tests(unittest.TestCase):
         dist = lambda a, b: np.sum([np.abs(x) for x in (path[b,:] - path[a,:])])
         for p in [1.0, math.sqrt(2), 2.0, math.exp(1)]:          
             pv = p_var_backbone(len(path), p, dist)
-            pv_ref = p_var_backbone_ref(len(path), p, dist)
+            pv_ref, _ = p_var_backbone_ref(len(path), p, dist)
             # check the two methods agree
             pv_err_pval = abs(pv.value - pv_ref) 
             self.assertGreater(epsilon, pv_err_pval)
@@ -37,7 +37,7 @@ class Tests(unittest.TestCase):
         dist = lambda a, b: abs(path[b] - path[a])
         for p in [1.0, math.sqrt(2), 2.0, math.exp(1)]:          
             pv = p_var_backbone(len(path), p, dist)
-            pv_ref = p_var_backbone_ref(len(path), p, dist)
+            pv_ref, _ = p_var_backbone_ref(len(path), p, dist)
             # check the two methods agree
             pv_err_pval = abs(pv.value - pv_ref) 
             self.assertGreater(epsilon, pv_err_pval)
@@ -49,10 +49,10 @@ class Tests(unittest.TestCase):
         # Test global warping distance consistency between Alexey's algo and standard DP
         x = np.random.rand(4, 2)
         y = np.random.rand(3, 2)
-        LP = LatticePaths(x, y, p=2., depth=2, norm='l1', brute_force=True)
-        p1, _ = LP.optim_warped_pvar
-        p2 = LP.warped_pvar
-        self.assertGreater(epsilon, np.abs(p1-p2))
+        LP = LatticePaths(x, y, p=2., depth=2, norm='l1', brute_force=True, parallelise=False)
+        pv1 = LP.warped_pvar
+        pv2 = LP.optim_warped_pvar
+        self.assertGreater(epsilon, np.abs(pv1-pv2))
 
 if __name__=="__main__":
     unittest.main()
