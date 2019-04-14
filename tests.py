@@ -45,11 +45,11 @@ class Tests(unittest.TestCase):
             pv_err_part = self._p_var_points_check(pv, p, dist)
             self.assertGreater(epsilon, pv_err_part)
 
-    def test_warped_pvar(self, epsilon=2e-1):
+    def test_warped_pvar(self, epsilon=3e-1):
         # Test global warping distance consistency between Alexey's algo and standard DP
         x = np.random.rand(4, 2)
         y = np.random.rand(3, 2)
-        LP = LatticePaths(x, y, p=2., depth=2, norm='l1', brute_force=True, parallelise=False)
+        LP = LatticePaths(x, y, p=2., depth=2, norm='l1', augment=False, add_time=False, brute_force=True, parallelise=False)
         pv1 = LP.warped_pvar
         pv2 = LP.optim_warped_pvar
         self.assertGreater(epsilon, np.abs(pv1-pv2))

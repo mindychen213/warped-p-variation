@@ -26,10 +26,12 @@ def p_var_backbone(path_size, p, path_dist):
     # * if path_size == 1, the result is .p_var = 0,         .points = [0]
 
     ret = collections.namedtuple('p_var', ['value', 'points'])
+
     if path_size == 0:
         return ret(value = -math.inf, points = [])
     elif path_size == 1:
         return ret(value = 0, points = [0])
+
     s = path_size - 1
     N = 1
     while s >> N != 0:
@@ -40,8 +42,11 @@ def p_var_backbone(path_size, p, path_dist):
     def ind_k(j, n):
         return min(((j >> n) << n) + (1 << (n-1)), s);
     max_p_var = 0.0
+
+
     run_p_var = [0.0] * path_size
     point_links = [0] * path_size
+
     for j in range(0, path_size):
         for n in range(1, N + 1):
             if not(j >> n == s >> n and (s >> (n-1)) % 2 == 0):
@@ -90,11 +95,12 @@ def p_var_backbone(path_size, p, path_dist):
                     else:
                         break
         run_p_var[j] = max_p_var
+
     points = []
     point_i = s
     while True:
         points.append(point_i)
-        if point_i == 0:
+        if point_i == 0:         
             break
         point_i = point_links[point_i]
     points.reverse()
@@ -102,19 +108,29 @@ def p_var_backbone(path_size, p, path_dist):
 
 # @Cris check this
 def p_var_backbone_ref(path_size, p, path_dist):
-    # Reference implementation of p_var_backbone, does not need the triangle inequality
-    # but may be slow; obviously correct.
+    # p-variation via Dynamic Programming
     if path_size == 0:
         return -math.inf
     elif path_size == 1:
         return 0
     cum_p_var = [0.] * path_size
-    optimal_partition = [0, 1]
+    point_links = [0] * path_size
     for j in range(1, path_size):
-        for m in range(j):
-            before = cum_p_var[j]
-            cum_p_var[j] = max(cum_p_var[j], cum_p_var[m] + pow(path_dist(m, j), p))
-            after = cum_p_var[j]
-            if before != after:
-                optimal_partition = optimal_partition[:-1] + [m]        
-    return pow(cum_p_var[-1], 1./p), optimal_partition
+        for k in range(j):
+            temp = pow(path_dist(k, j), p) + cum_p_var[k]
+            if cum_p_var[j] < temp:
+                cum_p_var[j] = temp
+                point_links[j] = k
+
+    ret = collections.namedtuple('p_var', ['value', 'points'])
+
+    points = []
+    point_i = path_size-1
+
+    while True:
+        points.append(point_i)
+        if point_i == 0:
+            break
+        point_i = point_links[point_i]
+    points.reverse()
+    return ret(value = pow(cum_p_var[-1], 1./p), points = points)
