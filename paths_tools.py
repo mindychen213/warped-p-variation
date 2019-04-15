@@ -8,6 +8,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 import copy
 from operator import itemgetter
+from tqdm import tqdm
 
 def split(N, l):
     return [l[x:x+N] for x in range(0, len(l), N)]
@@ -43,6 +44,8 @@ class LatticePaths():
         self.p = p 
         self.depth = depth
         self.norm=norm
+        self.brute_force = brute_force
+        self.parallelise = parallelise
 
         if brute_force:
 
@@ -64,13 +67,13 @@ class LatticePaths():
                 
                 # Alexey's algo
                 t = time.time()
-                self.optim_results = Parallel(n_jobs=num_cores)(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
+                self.optim_results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
                 self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = min(self.optim_results, key=itemgetter(0))
                 print('total time for brute force with Alexeys algo in parallel: {0:.2f} s'.format(time.time()-t))
 
                 # Dynamic programming
                 t = time.time()
-                self.results = Parallel(n_jobs=num_cores)(delayed(self._global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with DP
+                self.results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with DP
                 self.warped_pvar, self.best_partition, self.best_warp = min(self.results, key=itemgetter(0))
                 print('total time for brute force with DP in Parallel: {0:.2f} s'.format(time.time()-t))
 
@@ -126,7 +129,7 @@ class LatticePaths():
 
         self._findPathsUtil(path, i+1, j, indx+1)
         self._findPathsUtil(path, i, j+1, indx+1)
-        self._findPathsUtil(path, i+1, j+1, indx+1)
+        #self._findPathsUtil(path, i+1, j+1, indx+1)
 
     def _findPaths(self):
         """Generate all admissible warping paths, i.e. lattice paths + 1-step diagonal"""
@@ -155,7 +158,7 @@ class LatticePaths():
         """Brute force global warped p-variation distance with standard algo"""
         pvar_best, best_partition = self.single_warped_pvar(paths[0], self.p, self.depth, self.norm)
         best_warp = paths[0]
-        for w in paths[1:]:
+        for w in [tqdm(paths[1:], desc='Loop over all warps') if not self.parallelise else paths[1:]][0]:
             pvar, partition = self.single_warped_pvar(w, self.p, self.depth, self.norm)
             if pvar < pvar_best:
                 pvar_best = pvar
@@ -167,7 +170,7 @@ class LatticePaths():
         """Brute force global warped p-variation distance with Alexey's algo"""
         pvar_best, best_partition = self.optim_single_warped_pvar(paths[0], self.p, self.depth, self.norm)
         best_warp = paths[0]
-        for w in paths[1:]:
+        for w in [tqdm(paths[1:], desc='Loop over all warps') if not self.parallelise else paths[1:]][0]:
             pvar, partition = self.optim_single_warped_pvar(w, self.p, self.depth, self.norm)
             if pvar < pvar_best:
                 pvar_best = pvar
