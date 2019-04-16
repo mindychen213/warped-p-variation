@@ -25,7 +25,7 @@ def p_variation_path(p, path, depth, norm='l1'):
     """return signature p-variation and optimal partition points of a path up to level
        depth using the given norm and Dynamic Programming algorithm"""
     length = path.shape[0]
-    dist = lambda a,b: sig_norm(signature(path[:b,:],depth) - signature(path[:a,:],depth), norm)
+    dist = lambda a,b: sig_norm(signature(path[:b+1,:],depth) - signature(path[:a+1,:],depth), norm)
     pv = p_var_backbone_ref(length, p, dist)
     return pv.value, pv.points
 
@@ -33,13 +33,13 @@ def p_variation_path_optim(p, path, depth, norm='l1'):
     """return signature p-variation and optimal partition points of a path up to level 
        depth using the given norm and Alexey's optimised algorithm"""
     length = path.shape[0]
-    dist = lambda a,b: sig_norm(signature(path[:b,:],depth) - signature(path[:a,:],depth), norm)
+    dist = lambda a,b: sig_norm(signature(path[:b+1,:],depth) - signature(path[:a+1,:],depth), norm)
     pv = p_var_backbone(length, p, dist)
     return pv.value, pv.points
 
 def pairwise_sig_norm(path1, path2, depth, a, b, norm):
 	"""compute ||S(path1)_ab - S(path2)_ab||"""
-	return sig_norm(signature(path1[a:b,:], depth) - signature(path2[a:b,:], depth), norm)
+	return sig_norm(signature(path1[a:b+1,:], depth) - signature(path2[a:b+1,:], depth), norm)
 
 def p_variation_distance(path1, path2, p, depth, norm='l1'):
     """path1 and path2 must be numpy arrays of equal lenght.

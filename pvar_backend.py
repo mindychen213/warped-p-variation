@@ -106,7 +106,6 @@ def p_var_backbone(path_size, p, path_dist):
     points.reverse()
     return ret(value = pow(run_p_var[-1],1./p), points = points)
 
-# @Cris check this
 def p_var_backbone_ref(path_size, p, path_dist):
     # p-variation via Dynamic Programming
     if path_size == 0:
