@@ -30,7 +30,7 @@ class Warp:
         self.D = self._accumulated_cost()
         
         self.warping_path = [[len(x)-1, len(y)-1]]
-        self.cost = 0
+        self.cost = 0.
         self._back_track()
     
     def pairwise_distances(self):

@@ -13,7 +13,7 @@ def signature(path, depth):
 		return np.array([0.]*(tosig.sigdim(width, depth)-1))
 	return iisignature.sig(path, depth)
 
-def sig_norm(sig, norm):
+def sig_norm(sig, norm='l1'):
 	"""calculate norm difference between two signatures"""
 	assert norm in ['l1', 'l2']
 	if norm == 'l1':
@@ -37,7 +37,7 @@ def p_variation_path_optim(p, path, depth, norm='l1'):
     pv = p_var_backbone(length, p, dist)
     return pv.value, pv.points
 
-def pairwise_sig_norm(path1, path2, depth, a, b, norm):
+def pairwise_sig_norm(path1, path2, depth, a, b, norm='l1'):
 	"""compute ||S(path1)_ab - S(path2)_ab||"""
 	return sig_norm(signature(path1[a:b+1,:], depth) - signature(path2[a:b+1,:], depth), norm)
 

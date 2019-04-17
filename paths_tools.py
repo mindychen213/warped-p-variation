@@ -65,11 +65,11 @@ class LatticePaths():
                 num_cores = multiprocessing.cpu_count()
                 print('Using all available cores, i.e. {}'.format(num_cores))
                 
-                # Alexey's algo
-                t = time.time()
-                self.optim_results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
-                self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = min(self.optim_results, key=itemgetter(0))
-                print('total time for brute force with Alexeys algo in parallel: {0:.2f} s'.format(time.time()-t))
+                ## Alexey's algo
+                #t = time.time()
+                #self.optim_results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
+                #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = min(self.optim_results, key=itemgetter(0))
+                #print('total time for brute force with Alexeys algo in parallel: {0:.2f} s'.format(time.time()-t))
 
                 # Dynamic programming
                 t = time.time()
@@ -84,10 +84,10 @@ class LatticePaths():
                 self.warped_pvar, self.best_partition, self.best_warp = self._global_warping_pvar(self.allPaths) #brute force with DP
                 print('total time for brute force with DP sequentially: {0:.2f} s'.format(time.time()-t))
 
-                # Alexey's algo
-                t = time.time()
-                self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = self._optim_global_warping_pvar(self.allPaths) #brute force with Alexey's algo
-                print('total time for brute force with Alexey sequentiallys algo: {0:.2f} s'.format(time.time()-t))
+                ## Alexey's algo
+                #t = time.time()
+                #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = self._optim_global_warping_pvar(self.allPaths) #brute force with Alexey's algo
+                #print('total time for brute force with Alexey sequentiallys algo: {0:.2f} s'.format(time.time()-t))
 
 
     def _generate_grid(self):
@@ -129,7 +129,7 @@ class LatticePaths():
 
         self._findPathsUtil(path, i+1, j, indx+1)
         self._findPathsUtil(path, i, j+1, indx+1)
-        #self._findPathsUtil(path, i+1, j+1, indx+1)
+        self._findPathsUtil(path, i+1, j+1, indx+1)
 
     def _findPaths(self):
         """Generate all admissible warping paths, i.e. lattice paths + 1-step diagonal"""
