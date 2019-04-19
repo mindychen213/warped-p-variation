@@ -99,9 +99,12 @@ class Warp:
         plt.title('Warping')
     
     def plot_alignment(self):
+        #plt.plot(self.x.T[0], self.x.T[1], 'bo-' ,label = 'x')
+        #plt.plot(self.y.T[0], self.y.T[1], 'g^-', label = 'y')
         plt.plot(self.x, 'bo-' ,label = 'x')
         plt.plot(self.y, 'g^-', label = 'y')
         plt.title('Alignment')
         plt.legend()
         for [map_x, map_y] in self.warping_path:
+            #plt.plot([self.x[map_x][0], self.y[map_y][0]], [self.x[map_x][1], self.y[map_y][1]], 'r')
             plt.plot([map_x, map_y], [self.x[map_x], self.y[map_y]], 'r')

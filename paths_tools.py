@@ -178,7 +178,7 @@ class LatticePaths():
                 best_warp = w
         return pvar_best, best_partition, best_warp
 
-    # plotting @Cris TODO(think about how to display plot for multidimensional paths)
+    #plotting @Cris TODO(think about how to display plot for multidimensional paths)
     def plot_alignment(self):
         plt.plot(self.x.T[1], 'bo-' ,label = 'x')
         plt.plot(self.y.T[1], 'g^-', label = 'y')
