@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Travelling Salesman Problem"
   ],
-  "SelectedNode": "\\paths_tools.py",
+  "SelectedNode": "\\Travelling Salesman Problem\\TSP.py",
   "PreviewInSolutionExplorer": false
 }
