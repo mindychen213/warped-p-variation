@@ -9,7 +9,7 @@ class TSP():
         self.size = size
         self.costs = costs
         self.bestTour = bestTour
-        self.Node = None
+        self.bestNode = None
         self.bestNodeTime = 0
         self.num_createdNodes = 0
         self.num_prunedNodes = 0
@@ -54,8 +54,7 @@ class TSP():
         for i in range(self.size):
             for j in range(i+1, self.size):
                 edges.append([i,j])
-                lengths.append(c[i][j])
-                # lengths.append(self.costs[i][j])
+                lengths.append(self.costs[i][j])
         return [z for (l,z) in sorted(zip(lengths, edges))]
 
     def create_root(self):
@@ -83,63 +82,63 @@ class TSP():
                 self.bestNodeTime = time.perf_counter()
                 print('Found better tour: ', self.bestNode, 
                       ' of length', self.bestTour, ' km')
-            else:
-                new_constraint = copy.copy(node.next_constraint())
-                new_constraint.append(1)
-                leftChild = Node(self.size, 
-                                 self.costs, 
-                                 self.sortedEdges, 
-                                 self.allSortedEdges, 
-                                 node.constraints, 
-                                 new_constraint)
-                new_constraint[2] = 0
-                rightChild = Node(self.size,
-                                  self.costs,
-                                  self.sortedEdges,
-                                  self.allSortedEdges,
-                                  node.constraints,
-                                  new_constraint)
-                self.num_createdNodes += 2
-                if self.num_createdNodes%400==0:
-                    print('Number of nodes created so far: ', 
-                          self.num_createdNodes)
-                    print('Number of nodes pruned so far: ',
-                          self.num_prunedNodes)
-                if self.num_createdNodes%50==0:
-                    print('.')
-                if (leftChild.contains_subtour()) or (leftChild.loweBound > 2*self.bestTour):
-                    leftChild = None
-                    self.num_prunedNodes += 1
-                if (rightChild.contains_subtour()) or (rightChild.loweBound > 2*self.bestTour):
-                    rightChild = None
-                    self.num_prunedNodes += 1
-                if (leftChild!=None) and (rightChild==None):
-                    self.BranchAndBound(leftChild)
-                elif (leftChild==None) and (rightChild!=None):
-                    self.BranchAndBound(rightChild)
-                elif (leftChild!=None) and (rightChild!=None):
-                    if leftChild.lowerBound <= rightChild.lowerBound:
-                        if leftChild.lowerBound < 2*self.bestTour:
-                            self.BranchAndBound(leftChild)
-                        else:
-                            leftChild = None
-                            self.num_prunedNodes += 1
-                        if rightChild.lowerBound < 2*self.bestTour:
-                            self.BranchAndBound(rightChild)
-                        else:
-                            rightChild = None
-                            self.num_prunedNodes += 1
+        else:
+            new_constraint = copy.copy(node.next_constraint())
+            new_constraint.append(1)
+            leftChild = Node(self.size, 
+                                self.costs, 
+                                self.sortedEdges, 
+                                self.allSortedEdges, 
+                                node.constraints, 
+                                new_constraint)
+            new_constraint[2] = 0
+            rightChild = Node(self.size,
+                                self.costs,
+                                self.sortedEdges,
+                                self.allSortedEdges,
+                                node.constraints,
+                                new_constraint)
+            self.num_createdNodes += 2
+            if self.num_createdNodes%400==0:
+                print('Number of nodes created so far: ', 
+                        self.num_createdNodes)
+                print('Number of nodes pruned so far: ',
+                        self.num_prunedNodes)
+            if self.num_createdNodes%50==0:
+                print('.')
+            if (leftChild.contains_subtour()) or (leftChild.lowerBound > 2*self.bestTour):
+                leftChild = None
+                self.num_prunedNodes += 1
+            if (rightChild.contains_subtour()) or (rightChild.lowerBound > 2*self.bestTour):
+                rightChild = None
+                self.num_prunedNodes += 1
+            if (leftChild!=None) and (rightChild==None):
+                self.BranchAndBound(leftChild)
+            elif (leftChild==None) and (rightChild!=None):
+                self.BranchAndBound(rightChild)
+            elif (leftChild!=None) and (rightChild!=None):
+                if leftChild.lowerBound <= rightChild.lowerBound:
+                    if leftChild.lowerBound < 2*self.bestTour:
+                        self.BranchAndBound(leftChild)
                     else:
-                        if rightChild.lowerBound < 2*self.bestTour:
-                            self.BranchAndBound(rightChild)
-                        else:
-                            rightChild = None
-                            self.num_prunedNodes += 1
-                        if leftChild.lowerBound < 2*self.bestTour:
-                            self.BranchAndBound(leftChild)
-                        else:
-                            leftChild = None
-                            self.num_prunedNodes += 1
+                        leftChild = None
+                        self.num_prunedNodes += 1
+                    if rightChild.lowerBound < 2*self.bestTour:
+                        self.BranchAndBound(rightChild)
+                    else:
+                        rightChild = None
+                        self.num_prunedNodes += 1
+                else:
+                    if rightChild.lowerBound < 2*self.bestTour:
+                        self.BranchAndBound(rightChild)
+                    else:
+                        rightChild = None
+                        self.num_prunedNodes += 1
+                    if leftChild.lowerBound < 2*self.bestTour:
+                        self.BranchAndBound(leftChild)
+                    else:
+                        leftChild = None
+                        self.num_prunedNodes += 1
 
 
 

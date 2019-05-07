@@ -3,7 +3,7 @@ import copy
 import numpy as np
 
 class Node ():
-    def __init__(self, size, costs, sortedEdges, allSortedEdges, parentconstr, extraconstr=None):
+    def __init__(self, size, costs, sortedEdges, allSortedEdges, parent_constr, extra_constr=None):
         self.size = size # Number of cities
         self.costs = costs # Distance matrix
         self.sortedEdges = sortedEdges
@@ -57,7 +57,7 @@ class Node ():
         """
         for i in range(self.size):
             t = 0
-            for j in range(sself.size):
+            for j in range(self.size):
                 if (i!=j) and (constraints[i][j]==1):
                     t+=1
             if t >= 2:
@@ -107,7 +107,7 @@ class Node ():
     def next_one(self, prev, fr, constraints):
         """This function determines whether there exists an included edge that starts
            in fr and does end in prev. If so, it also returns the endpoint of this edge
-        """
+        """     
         for j in range(self.size):
             if (constraints[fr][j] == 1) and (j != prev):
                 return [True, j]
@@ -138,7 +138,7 @@ class Node ():
                 prev=i
                 fr=next[1]
                 t =1
-                next = self.next_one(prev,fr,self.contraints)
+                next = self.next_one(prev,fr,self.constraints)
             while next[0]:
                 t+=1
                 prev=fr
