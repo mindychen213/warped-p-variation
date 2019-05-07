@@ -20,11 +20,11 @@ def augment_path(x, y, add_time=True):
         transformer = LeadLag()
     return transformer.fit_transform([x])[0], transformer.fit_transform([y])[0]
 
-class LatticePaths():
+class BruteForceWarpedPvar():
     """Takes in two piece-wise linear paths x and y as numpy arrays (lenght, dimension)
        dimension must be the same for bith x and y. length doesn't need to agree.
     """
-    def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, brute_force=True, parallelise=True):
+    def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, parallelise=True):
 
         # lengths of the two curves
         self.m = x.shape[0]
@@ -47,48 +47,45 @@ class LatticePaths():
         self.brute_force = brute_force
         self.parallelise = parallelise
 
-        if brute_force:
+        # compute list of all possible warping paths (This can be done in advance and stored in a file 
+        # that is read every time the code is called instea of recomputing every time)
+        self.total_paths = self._countPaths() #total number of admissible warping paths
+        print('number of warping paths to explore: {}'.format(self.total_paths))
+        t = time.time()
+        self.allPaths = [] 
+        self._findPaths()
+        print('time to find all possible paths: {0:.2f}'.format(time.time()-t))
 
-            # compute list of all possible warping paths (This can be done in advance and stored in a file 
-            # that is read every time the code is called instea of recomputing every time)
-            self.total_paths = self._countPaths() #total number of admissible warping paths
-            print('number of warping paths to explore: {}'.format(self.total_paths))
+        # Computations in parallel
+        if parallelise:
+
+            # find number of available cores
+            num_cores = multiprocessing.cpu_count()
+            print('Using all available cores, i.e. {}'.format(num_cores))
+            
+            # Dynamic programming
             t = time.time()
-            self.allPaths = [] 
-            self._findPaths()
-            print('time to find all possible paths: {0:.2f}'.format(time.time()-t))
+            self.results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with DP
+            self.warped_pvar, self.best_partition, self.best_warp = min(self.results, key=itemgetter(0))
+            print('total time for brute force with DP in Parallel: {0:.2f} s'.format(time.time()-t))
 
-            # Computations in parallel
-            if parallelise:
+            ## Alexey's algo
+            #t = time.time()
+            #self.optim_results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
+            #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = min(self.optim_results, key=itemgetter(0))
+            #print('total time for brute force with Alexeys algo in parallel: {0:.2f} s'.format(time.time()-t))
 
-                # find number of available cores
-                num_cores = multiprocessing.cpu_count()
-                print('Using all available cores, i.e. {}'.format(num_cores))
-                
-                ## Alexey's algo
-                #t = time.time()
-                #self.optim_results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
-                #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = min(self.optim_results, key=itemgetter(0))
-                #print('total time for brute force with Alexeys algo in parallel: {0:.2f} s'.format(time.time()-t))
+        else: # Sequential computations
 
-                # Dynamic programming
-                t = time.time()
-                self.results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with DP
-                self.warped_pvar, self.best_partition, self.best_warp = min(self.results, key=itemgetter(0))
-                print('total time for brute force with DP in Parallel: {0:.2f} s'.format(time.time()-t))
+            # Dynamic programming
+            t = time.time()
+            self.warped_pvar, self.best_partition, self.best_warp = self._global_warping_pvar(self.allPaths) #brute force with DP
+            print('total time for brute force with DP sequentially: {0:.2f} s'.format(time.time()-t))
 
-            else: # Sequential computations
-
-                # Dynamic programming
-                t = time.time()
-                self.warped_pvar, self.best_partition, self.best_warp = self._global_warping_pvar(self.allPaths) #brute force with DP
-                print('total time for brute force with DP sequentially: {0:.2f} s'.format(time.time()-t))
-
-                ## Alexey's algo
-                #t = time.time()
-                #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = self._optim_global_warping_pvar(self.allPaths) #brute force with Alexey's algo
-                #print('total time for brute force with Alexey sequentiallys algo: {0:.2f} s'.format(time.time()-t))
-
+            ## Alexey's algo
+            #t = time.time()
+            #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = self._optim_global_warping_pvar(self.allPaths) #brute force with Alexey's algo
+            #print('total time for brute force with Alexey sequentiallys algo: {0:.2f} s'.format(time.time()-t))
 
     def _generate_grid(self):
         """generate lattice"""

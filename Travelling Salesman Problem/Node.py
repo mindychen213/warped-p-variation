@@ -2,7 +2,7 @@ import math
 import copy
 import numpy as np
 
-class Node ():
+class Node():
     def __init__(self, size, costs, sortedEdges, allSortedEdges, parent_constr, extra_constr=None):
         self.size = size # Number of cities
         self.costs = costs # Distance matrix
