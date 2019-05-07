@@ -21,16 +21,16 @@ class Node ():
                 if self.constraints[i][j] == 1:
                     lower += self.costs[i][j]
                     t += 1
-        tt = 0
-        while t < 2:
-            shortest = self.sortedEdges[i][tt]
-            if self.constraints[i][shortest] == 2:
-                lower += self.costs[i][shortest]
-                t += 1
-            tt += 1
-            if tt >= self.size:
-                lower = math.inf
-                break
+            tt = 0
+            while t < 2:
+                shortest = self.sortedEdges[i][tt]
+                if self.constraints[i][shortest] == 2:
+                    lower += self.costs[i][shortest]
+                    t += 1
+                tt += 1
+                if tt >= self.size:
+                    lower = math.inf
+                    break
             lb += lower
         return lb
 
@@ -107,11 +107,13 @@ class Node ():
     def next_one(self, prev, fr, constraints):
         """This function determines whether there exists an included edge that starts
            in fr and does end in prev. If so, it also returns the endpoint of this edge
-        """     
+        """ 
+        #try:
         for j in range(self.size):
             if (constraints[fr][j] == 1) and (j != prev):
                 return [True, j]
         return [False]
+        #except TypeError:
 
     def isTour(self):
         """This function determines if a node represents a full tour by checking
