@@ -1,8 +1,12 @@
 {
   "ExpandedNodes": [
     "",
-    "\\Travelling Salesman Problem"
+    "\\data",
+    "\\Travelling Salesman Problem",
+    "\\WarpedSignaturePvar",
+    "\\WarpedSignaturePvar\\backend",
+    "\\WarpedSignaturePvar\\src"
   ],
-  "SelectedNode": "\\Travelling Salesman Problem\\Node.py",
+  "SelectedNode": "\\Travelling Salesman Problem\\TSP.py",
   "PreviewInSolutionExplorer": false
 }
