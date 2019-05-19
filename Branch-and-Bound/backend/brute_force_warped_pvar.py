@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, '../data')
+
 import numpy as np
 from pvar_tools import *
 from transformers import *
@@ -42,7 +45,6 @@ class BruteForceWarpedPvar():
         self.p = p 
         self.depth = depth
         self.norm=norm
-        self.brute_force = brute_force
         self.parallelise = parallelise
 
         # compute list of all possible warping paths (This can be done in advance and stored in a file 

@@ -132,5 +132,4 @@ def p_var_backbone_ref(path_size, p, path_dist):
             break
         point_i = point_links[point_i]
     points.reverse()
-    print(cum_p_var)
     return ret(value = pow(cum_p_var[-1], 1./p), points = points)
