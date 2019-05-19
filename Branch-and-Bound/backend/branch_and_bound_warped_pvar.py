@@ -3,6 +3,7 @@ sys.path.insert(0, '../data')
 
 import pybnb
 import numpy as np
+import math
 
 from pvar_tools import *
 from brute_force_warped_pvar import augment_path
@@ -14,27 +15,28 @@ class BnBWarping(pybnb.Problem):
         encounters a node whose bound() is worse than the best objective() seen so far.
     """
 
-    def __init__(self, x, y, p, depth, norm='l1'):
+    def __init__(self, x, y, p, depth, norm='l1', plot_2d=False):
 
-        self.x = tuple(x)
+        self.x = np.array(x)
         self.m = len(self.x)
-        self.y = tuple(y)
+        self.y = np.array(y)
         self.n = len(self.y)
         assert self.m > 0
         assert self.n > 0
+        self.plot_2d = plot_2d
 
         self.p = p
         self.depth = depth
         self.norm = norm
 
 #         self.values_memoization = {}
-        self.path = [(0,0)]
-        self.evaluation = [] # keep track of the history of parent function evaluations
+        self.path = [(0,0), (0,0)]
+        self.evaluation = [math.inf] # keep track of the history of parent function evaluations
 
-    def align(self, path):
-        """align x and y according to the path"""
-        x_reparam = [self.x[k] for k in [i for i,j in path]]
-        y_reparam = [self.y[k] for k in [j for i,j in path]]
+    def align(self, warp):
+        """align x and y according to the warping path"""
+        x_reparam = np.array([self.x[k] for k in [j[0] for j in warp]])
+        y_reparam = np.array([self.y[k] for k in [j[1] for j in warp]])
         return x_reparam, y_reparam
 
     def distance(self, warp):
@@ -74,7 +76,7 @@ class BnBWarping(pybnb.Problem):
             path will ensure to optimise over the right search space (instead of 
             optimising over all possible partial paths on the tree).
         """
-        
+
         if self.path[-1] == (self.m-1,self.n-1):
             val, _ = self.distance(self.path)
         else:
@@ -136,3 +138,18 @@ class BnBWarping(pybnb.Problem):
             
 #     def notify_new_best_node(self, node, current=True):
 #         print('we found a new best', node)
+
+    def plot_alignment(self):
+        if self.plot_2d:
+            plt.plot(self.x.T[0], self.x.T[1], 'bo-' ,label = 'x')
+            plt.plot(self.y.T[0], self.y.T[1], 'g^-', label = 'y')
+        else:
+            plt.plot(self.x, 'bo-' ,label = 'x')
+            plt.plot(self.y, 'g^-', label = 'y')
+        plt.title('Alignment')
+        plt.legend()
+        for map_x, map_y in self.path:
+            if self.plot_2d:
+                plt.plot([self.x[map_x][0], self.y[map_y][0]], [self.x[map_x][1], self.y[map_y][1]], 'r')
+            else:
+                plt.plot([map_x, map_y], [self.x[map_x], self.y[map_y]], 'r')

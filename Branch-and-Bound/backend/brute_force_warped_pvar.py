@@ -27,7 +27,8 @@ class BruteForceWarpedPvar():
     """Takes in two piece-wise linear paths x and y as numpy arrays (lenght, dimension)
        dimension must be the same for bith x and y. length doesn't need to agree.
     """
-    def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, parallelise=True):
+    def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, 
+                 parallelise=True, plot_2d=False):
 
         # lengths of the two curves
         self.m = x.shape[0]
@@ -48,6 +49,7 @@ class BruteForceWarpedPvar():
         self.depth = depth
         self.norm=norm
         self.parallelise = parallelise
+        self.plot_2d = plot_2d
 
         # compute list of all possible warping paths (This can be done in advance and stored in a file 
         # that is read every time the code is called instea of recomputing every time)
@@ -177,11 +179,17 @@ class BruteForceWarpedPvar():
                 best_warp = w
         return pvar_best, best_partition, best_warp
 
-    #plotting @Cris TODO(think about how to display plot for multidimensional paths)
     def plot_alignment(self):
-        plt.plot(self.x.T[1], 'bo-' ,label = 'x')
-        plt.plot(self.y.T[1], 'g^-', label = 'y')
+        if self.plot_2d:
+            plt.plot(self.x.T[0], self.x.T[1], 'bo-' ,label = 'x')
+            plt.plot(self.y.T[0], self.y.T[1], 'g^-', label = 'y')
+        else:
+            plt.plot(self.x, 'bo-' ,label = 'x')
+            plt.plot(self.y, 'g^-', label = 'y')
         plt.title('Alignment')
         plt.legend()
-        for (map_x, map_y) in self.best_warp:
-            plt.plot([map_x, map_y], [self.x.T[1][map_x], self.y.T[1][map_y]], 'r')
+        for [map_x, map_y] in self.warping_path:
+            if self.plot_2d:
+                plt.plot([self.x[map_x][0], self.y[map_y][0]], [self.x[map_x][1], self.y[map_y][1]], 'r')
+            else:
+                plt.plot([map_x, map_y], [self.x[map_x], self.y[map_y]], 'r')
