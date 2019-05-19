@@ -1,20 +1,31 @@
+import sys
+sys.path.insert(0, '../data')
+
 import pybnb
 import numpy as np
 
-class Lattice(pybnb.Problem):
+from pvar_tools import *
+from brute_force_warped_pvar import augment_path
+
+class BnBWarping(pybnb.Problem):
     
     """ The solver in pybnb keeps track of the best solution seen so far for you, 
         and will prune the search space by not calling the branch() method when it 
         encounters a node whose bound() is worse than the best objective() seen so far.
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, p, depth, norm='l1'):
+
         self.x = tuple(x)
         self.m = len(self.x)
         self.y = tuple(y)
         self.n = len(self.y)
         assert self.m > 0
         assert self.n > 0
+
+        self.p = p
+        self.depth = depth
+        self.norm = norm
 
 #         self.values_memoization = {}
         self.path = [(0,0)]
@@ -25,10 +36,13 @@ class Lattice(pybnb.Problem):
         x_reparam = [self.x[k] for k in [i for i,j in path]]
         y_reparam = [self.y[k] for k in [j for i,j in path]]
         return x_reparam, y_reparam
-    
-    def distance(self, path):
-        x, y = self.align(path)
-        return np.sqrt(np.sum([(xx-yy)**2 for xx,yy in zip(x,y)]))
+
+    def distance(self, warp):
+        """computes warped p-variation along one path with dynamic programming algo"""
+        x_reparam, y_reparam = self.align(warp)
+        pvar, partition = p_variation_distance(x_reparam, y_reparam, p=self.p, 
+                                               depth=self.depth, norm=self.norm)
+        return pvar, partition
     
     #def random_exploratory_path(self, path):
     #    i,j = path[-1]
@@ -62,7 +76,7 @@ class Lattice(pybnb.Problem):
         """
         
         if self.path[-1] == (self.m-1,self.n-1):
-            val = self.distance(self.path)
+            val, _ = self.distance(self.path)
         else:
             val = self.infeasible_objective()
 
@@ -84,7 +98,8 @@ class Lattice(pybnb.Problem):
         #return self.distance(exploratory_path)
         
 #         return self.unbounded_objective()
-        return self.distance(self.path)
+        b, _ = self.distance(self.path)
+        return b
 
     def save_state(self, node):
         node.state = (list(self.path), list(self.evaluation))
