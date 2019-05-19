@@ -17,13 +17,14 @@ class Warp:
         2) Symmetry, i.e. invariant to coordinate swapping
     """
     
-    def __init__(self, x, y, d, f_d):
+    def __init__(self, x, y, d, f_d, final_operator):
     
         self.x = x
         self.y = y
         self.x_nsamples = len(x)
         self.y_nsamples = len(y)
-        
+
+        self.final_operator = final_operator
         self.d = d
         self.f_d = f_d
         
@@ -92,7 +93,8 @@ class Warp:
         
         for [p, q] in self.warping_path:
             self.cost += self.d(self.x[p], self.y[q])
-    
+        self.cost = self.final_operator(self.cost)
+
     def plot_lattice(self):
         self.distance_cost_plot(self.D)
         plt.plot([e[0] for e in self.warping_path], [e[1] for e in self.warping_path])

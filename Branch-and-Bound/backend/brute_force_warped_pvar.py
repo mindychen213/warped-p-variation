@@ -2,12 +2,10 @@ import numpy as np
 from pvar_tools import *
 from transformers import *
 import matplotlib.pyplot as plt
-import seaborn as sns
 import time
 from joblib import Parallel, delayed
 import multiprocessing
 import copy
-from operator import itemgetter
 from tqdm import tqdm
 
 def split(N, l):
