@@ -116,7 +116,7 @@ def p_var_backbone_ref(path_size, p, path_dist):
     point_links = [0] * path_size
     for j in range(1, path_size):       
         for k in range(j):
-            temp = pow(path_dist(k, j), p) + cum_p_var[k]
+            temp = path_dist(k, j)**p + cum_p_var[k]
             if cum_p_var[j] < temp:
                 cum_p_var[j] = temp
                 point_links[j] = k
@@ -124,12 +124,13 @@ def p_var_backbone_ref(path_size, p, path_dist):
     ret = collections.namedtuple('p_var', ['value', 'points'])
 
     points = []
-    point_i = path_size-1
+    #point_i = path_size-1
 
-    while True:
-        points.append(point_i)
-        if point_i == 0:
-            break
-        point_i = point_links[point_i]
-    points.reverse()
-    return ret(value = pow(cum_p_var[-1], 1./p), points = points)
+    #while True:
+    #    points.append(point_i)
+    #    if point_i == 0:
+    #        break
+    #    point_i = point_links[point_i]
+    #points.reverse()
+
+    return ret(value = cum_p_var[-1], points = points)

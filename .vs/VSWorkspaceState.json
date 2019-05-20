@@ -1,9 +1,11 @@
 {
   "ExpandedNodes": [
     "",
-    "\\WarpedSignaturePvar",
-    "\\WarpedSignaturePvar\\src"
+    "\\Branch-and-Bound",
+    "\\Branch-and-Bound\\backend",
+    "\\Branch-and-Bound\\examples",
+    "\\Branch-and-Bound\\src"
   ],
-  "SelectedNode": "\\WarpedSignaturePvar\\src\\BinaryKnapsack.ipynb",
+  "SelectedNode": "\\Branch-and-Bound\\backend\\pvar_backend.py",
   "PreviewInSolutionExplorer": false
 }

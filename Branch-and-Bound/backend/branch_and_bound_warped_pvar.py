@@ -3,7 +3,6 @@ sys.path.insert(0, '../data')
 
 import pybnb
 import numpy as np
-import math
 
 from pvar_tools import *
 from brute_force_warped_pvar import augment_path
@@ -29,9 +28,8 @@ class BnBWarping(pybnb.Problem):
         self.depth = depth
         self.norm = norm
 
-#         self.values_memoization = {}
         self.path = [(0,0), (0,0)]
-        self.evaluation = [math.inf] # keep track of the history of parent function evaluations
+        #self.evaluation = [float('inf')] # keep track of the history of parent function evaluations
 
     def align(self, warp):
         """align x and y according to the warping path"""
@@ -45,26 +43,6 @@ class BnBWarping(pybnb.Problem):
         pvar, partition = p_variation_distance(x_reparam, y_reparam, p=self.p, 
                                                depth=self.depth, norm=self.norm)
         return pvar, partition
-    
-    #def random_exploratory_path(self, path):
-    #    i,j = path[-1]
-    #    if (i==self.m-1) and (j<self.n-1):
-    #        new_path = list(path) + [(i,j+1)]
-    #        return self.random_exploratory_path(new_path)
-    #    elif (i<self.m-1) and (j==self.n-1):
-    #        new_path = list(path) + [(i+1,j)]
-    #        return self.random_exploratory_path(new_path)
-    #    elif (i<self.m-1) and (j<self.n-1):
-    #        direction = np.random.randint(3)
-    #        if direction == 0:
-    #            new_path = list(path) + [(i,j+1)]
-    #        elif direction == 1:
-    #            new_path = list(path) + [(i+1,j)]
-    #        else:
-    #            new_path = list(path) + [(i+1,j+1)]
-    #        return self.random_exploratory_path(new_path)
-    #    else:
-    #        return path
         
     def sense(self):
         return pybnb.minimize
@@ -83,9 +61,9 @@ class BnBWarping(pybnb.Problem):
             val = self.infeasible_objective()
 
         # TODO: do we need to keep track of values calculated along each path?
-        assert len(self.evaluation) in (len(self.path), len(self.path)-1)
-        if len(self.evaluation) == len(self.path)-1:
-            self.evaluation.append(val)
+        #assert len(self.evaluation) in (len(self.path), len(self.path)-1)
+        #if len(self.evaluation) == len(self.path)-1:
+        #    self.evaluation.append(val)
 
         return val
 
@@ -95,19 +73,17 @@ class BnBWarping(pybnb.Problem):
             along a partial path based on the best known objective.
         """
         
-        #exploratory_path = self.random_exploratory_path(self.path)
-        #print(exploratory_path)
-        #return self.distance(exploratory_path)
-        
-#         return self.unbounded_objective()
+        #return self.unbounded_objective()
         b, _ = self.distance(self.path)
         return b
 
     def save_state(self, node):
-        node.state = (list(self.path), list(self.evaluation))
+        node.state = list(self.path)
+        #node.state = (list(self.path), list(self.evaluation))
 
     def load_state(self, node):
-        (self.path, self.evaluation) = node.state
+        self.path = node.state
+        #(self.path, self.evaluation) = node.state
 
     def branch(self):
         
@@ -115,26 +91,31 @@ class BnBWarping(pybnb.Problem):
         
         if (i==self.m-1) and (j<self.n-1):
             child = pybnb.Node()
-            child.state = (self.path + [(i,j+1)], list(self.evaluation))
+            child.state = self.path + [(i,j+1)]
+            #child.state = (self.path + [(i,j+1)], list(self.evaluation))
             yield child
         
         elif (i<self.m-1) and (j==self.n-1):
             child = pybnb.Node()
-            child.state = (self.path + [(i+1,j)], list(self.evaluation))
+            child.state = self.path + [(i+1,j)]
+            #child.state = (self.path + [(i+1,j)], list(self.evaluation))
             yield child
         
         elif (i<self.m-1) and (j<self.n-1):
-            child = pybnb.Node()
-            child.state = (self.path + [(i+1,j)], list(self.evaluation))
-            yield child
-        
-            child = pybnb.Node()
-            child.state = (self.path + [(i,j+1)], list(self.evaluation))
-            yield child
-        
-            child = pybnb.Node()
-            child.state = (self.path + [(i+1,j+1)], list(self.evaluation))
-            yield child
+            # randomize search
+            direction = np.random.randint(3)
+            if direction == 0:
+                nodes_update = [(i+1,j), (i,j+1), (i+1,j+1)]
+            elif direction == 1:
+                nodes_update = [(i,j+1), (i+1,j+1), (i+1,j)]
+            else:
+                nodes_update = [(i+1,j+1), (i+1,j), (i,j+1)]
+
+            for v in nodes_update:
+                child = pybnb.Node()
+                child.state = self.path + [v]
+                #child.state = (self.path + [v], list(self.evaluation))
+                yield child
             
 #     def notify_new_best_node(self, node, current=True):
 #         print('we found a new best', node)
