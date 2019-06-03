@@ -188,7 +188,7 @@ class BruteForceWarpedPvar():
             plt.plot(self.y, 'g^-', label = 'y')
         plt.title('Alignment')
         plt.legend()
-        for [map_x, map_y] in self.warping_path:
+        for [map_x, map_y] in self.best_warp:
             if self.plot_2d:
                 plt.plot([self.x[map_x][0], self.y[map_y][0]], [self.x[map_x][1], self.y[map_y][1]], 'r')
             else:

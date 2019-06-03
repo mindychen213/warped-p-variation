@@ -3,9 +3,9 @@
     "",
     "\\Branch-and-Bound",
     "\\Branch-and-Bound\\backend",
-    "\\Branch-and-Bound\\examples",
-    "\\Branch-and-Bound\\src"
+    "\\Branch-and-Bound\\src",
+    "\\data"
   ],
-  "SelectedNode": "\\Branch-and-Bound\\src\\exec.py",
+  "SelectedNode": "\\Branch-and-Bound\\src",
   "PreviewInSolutionExplorer": false
 }
