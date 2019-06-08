@@ -3,9 +3,10 @@
     "",
     "\\Branch-and-Bound",
     "\\Branch-and-Bound\\backend",
+    "\\Branch-and-Bound\\examples",
     "\\Branch-and-Bound\\src",
     "\\data"
   ],
-  "SelectedNode": "\\Branch-and-Bound\\src",
+  "SelectedNode": "\\Branch-and-Bound\\backend\\branch_and_bound_warped_pvar.py",
   "PreviewInSolutionExplorer": false
 }

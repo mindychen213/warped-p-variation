@@ -28,7 +28,8 @@ class BruteForceWarpedPvar():
        dimension must be the same for bith x and y. length doesn't need to agree.
     """
     def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, 
-                 parallelise=True, plot_2d=False):
+                 parallelise=True, plot_2d=False, optim_partition=True, 
+                 pvar_advanced=False, pth_root=False):
 
         # lengths of the two curves
         self.m = x.shape[0]
@@ -50,11 +51,14 @@ class BruteForceWarpedPvar():
         self.norm=norm
         self.parallelise = parallelise
         self.plot_2d = plot_2d
+        self.optim_partition = optim_partition
+        self.pvar_advanced = pvar_advanced 
+        self.pth_root = pth_root
 
         # compute list of all possible warping paths (This can be done in advance and stored in a file 
         # that is read every time the code is called instea of recomputing every time)
         self.total_paths = self._countPaths() #total number of admissible warping paths
-        print('number of warping paths to explore: {}'.format(self.total_paths))
+        #print('number of warping paths to explore: {}'.format(self.total_paths))
         t = time.time()
         self.allPaths = [] 
         self._findPaths()
@@ -73,23 +77,12 @@ class BruteForceWarpedPvar():
             self.warped_pvar, self.best_partition, self.best_warp = min(self.results, key=itemgetter(0))
             print('total time for brute force with DP in Parallel: {0:.2f} s'.format(time.time()-t))
 
-            ## Alexey's algo
-            #t = time.time()
-            #self.optim_results = Parallel(n_jobs=num_cores, prefer="threads")(delayed(self._optim_global_warping_pvar)(l) for l in split(int(len(self.allPaths)/num_cores), self.allPaths)) #brute force with Alexey's algo
-            #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = min(self.optim_results, key=itemgetter(0))
-            #print('total time for brute force with Alexeys algo in parallel: {0:.2f} s'.format(time.time()-t))
-
         else: # Sequential computations
 
             # Dynamic programming
             t = time.time()
             self.warped_pvar, self.best_partition, self.best_warp = self._global_warping_pvar(self.allPaths) #brute force with DP
             print('total time for brute force with DP sequentially: {0:.2f} s'.format(time.time()-t))
-
-            ## Alexey's algo
-            #t = time.time()
-            #self.optim_warped_pvar, self.optim_best_partition, self.optim_best_warp = self._optim_global_warping_pvar(self.allPaths) #brute force with Alexey's algo
-            #print('total time for brute force with Alexey sequentiallys algo: {0:.2f} s'.format(time.time()-t))
 
     def _generate_grid(self):
         """generate lattice"""
@@ -143,36 +136,21 @@ class BruteForceWarpedPvar():
         y_reparam = np.array([self.y[k] for k in [j[1] for j in warp]])
         return x_reparam, y_reparam
 
-    def single_warped_pvar(self, warp, p, depth, norm='l1'):
+    def single_warped_pvar(self, warp, p, depth, norm, optim_partition, pvar_advanced, pth_root):
         """computes warped p-variation along one path with dynamic programming algo"""
         x_reparam, y_reparam = self.align(warp)
-        pvar, partition = p_variation_distance(x_reparam, y_reparam, p=p, depth=depth, norm=norm)
-        return pvar, partition
-
-    def optim_single_warped_pvar(self, warp, p, depth, norm='l1'):
-        """computes warped p-variation along one path with Alexey's algo"""
-        x_reparam, y_reparam = self.align(warp)
-        pvar, partition = p_variation_distance_optim(x_reparam, y_reparam, p=p, depth=depth, norm=norm)
+        pvar, partition = p_variation_distance(x_reparam, y_reparam, p, depth, norm, 
+                                               optim_partition, pvar_advanced, pth_root)
         return pvar, partition
 
     def _global_warping_pvar(self, paths):
         """Brute force global warped p-variation distance with standard algo"""
-        pvar_best, best_partition = self.single_warped_pvar(paths[0], self.p, self.depth, self.norm)
+        pvar_best, best_partition = self.single_warped_pvar(paths[0], self.p, self.depth, self.norm, 
+                                                            self.optim_partition, self.pvar_advanced, self.pth_root)
         best_warp = paths[0]
         for w in [tqdm(paths[1:], desc='Loop over all warps') if not self.parallelise else paths[1:]][0]:
-            pvar, partition = self.single_warped_pvar(w, self.p, self.depth, self.norm)
-            if pvar < pvar_best:
-                pvar_best = pvar
-                best_partition = partition
-                best_warp = w
-        return pvar_best, best_partition, best_warp
-
-    def _optim_global_warping_pvar(self, paths):
-        """Brute force global warped p-variation distance with Alexey's algo"""
-        pvar_best, best_partition = self.optim_single_warped_pvar(paths[0], self.p, self.depth, self.norm)
-        best_warp = paths[0]
-        for w in [tqdm(paths[1:], desc='Loop over all warps') if not self.parallelise else paths[1:]][0]:
-            pvar, partition = self.optim_single_warped_pvar(w, self.p, self.depth, self.norm)
+            pvar, partition = self.single_warped_pvar(w, self.p, self.depth, self.norm, 
+                                                      self.optim_partition, self.pvar_advanced, self.pth_root)
             if pvar < pvar_best:
                 pvar_best = pvar
                 best_partition = partition
