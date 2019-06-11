@@ -6,6 +6,8 @@ import numpy as np
 import math
 import copy
 import matplotlib.pyplot as plt
+from functools import lru_cache
+from collections import defaultdict
 
 import pvar_backend
 import pvar_tools 
@@ -17,96 +19,86 @@ class BnBWarping(pybnb.Problem):
         encounters a node whose bound() is worse than the best objective() seen so far.
     """
 
-    def __init__(self, x, y, p, depth, norm='l1', root_node=(0, 0), boundary_condition=1,
-                 plot_2d=False, use_dp=True, with_sig_memoization=True, pvar_advanced=False, pth_root=False, 
-                 sig_memoizer_x={}, sig_memoizer_y={}, norm_pairs_memoizer={}, bound_memoizer={}):
+    def __init__(self, x, y, p, depth, norm='l1', root_node=(0,0), bc=4, 
+                 plot_2d=True, pvar_advanced=False, pvar_dist_mem=None):
 
         self.x = np.array(x)
         self.y = np.array(y)
- 
         self.m = len(self.x)
         self.n = len(self.y)
-        
         assert self.m > 0
         assert self.n > 0
-
-        self.plot_2d = plot_2d # flag to plot paths in 1-d or 2-d case
-        self.use_dp = use_dp # flag for enable usage of dynamic programming logic
-        self.with_sig_memoization = with_sig_memoization
-
-        # dynamic programming is only allowed to kick in if we are at least boundary_conditions nodes away from root.
-        self.boundary_condition = boundary_condition
 
         self.p = p # p for p-variation
         self.depth = depth # signature depth
         self.norm = norm # l1 or l2 norm
 
-        self.pvar_advanced = pvar_advanced # use Alexey's algorithm for p-variation
-        self.pth_root = pth_root # take pth root of p-variation
-
         self.path = [(0,0), (0,0)] # lattice path
         self.best_node_value = math.inf # keep track of best bound
-
         self.i0, self.j0 = root_node # tuple of indeces of root node
-        
-        # all these variables are global, hence shared by all recursive calls to the class
-        self.sig_memoizer_x = sig_memoizer_x
-        self.sig_memoizer_y = sig_memoizer_y 
-        self.norm_pairs_memoizer = norm_pairs_memoizer
-        self.bound_memoizer = bound_memoizer 
- 
 
-    def align(self, warp):
-        """align x and y according to the warping path"""
-        x_reparam = np.array([self.x[k] for k in [j[0] for j in warp]])
-        y_reparam = np.array([self.y[k] for k in [j[1] for j in warp]])
-        return x_reparam, y_reparam
+        self.plot_2d = plot_2d # flag to plot paths in 1-d or 2-d case
+        self.pvar_advanced = pvar_advanced # use Alexey's algorithm for p-variation
 
-    def distance(self, warp, compute_optim_partition=False):
+        self.bc = bc
+        if pvar_dist_mem is None:
+            self.pvar_dist_mem = defaultdict(float)
+        else:
+            self.pvar_dist_mem = pvar_dist_mem
+
+    @lru_cache(maxsize=None)
+    def signature_x(self, I, J):
+        i_0 = I - self.i0
+        i_N = J - self.i0
+        return pvar_tools.signature(self.x[i_0:i_N+1], self.depth)
+
+    @lru_cache(maxsize=None)
+    def signature_y(self, I, J):
+        j_0 = I - self.j0
+        j_N = J - self.j0
+        return pvar_tools.signature(self.y[j_0:j_N+1], self.depth)
+
+    @lru_cache(maxsize=None)
+    def signature_norm_diff(self, i, j, I, J):
+        sig_x = self.signature_x(i, I)
+        sig_y = self.signature_y(j, J)
+        return pvar_tools.sig_norm(sig_x, sig_y, self.norm)
+
+    def projections_warp2paths(self, warp):
+        index_x_reparam = []
+        index_y_reparam = []
+        projections = []
+        for i,j in warp:
+            index_x_reparam.append(i)
+            index_y_reparam.append(j)
+            projections.append((self.x.item(i), self.y.item(j)))
+        return index_x_reparam, index_y_reparam, tuple(projections)
+
+    def distance(self, warp, optim_partition=False):
         """computes warped p-variation along one path with dynamic programming algo"""
 
-        if self.with_sig_memoization:
+        length = len(warp)
+        index_x_reparam, index_y_reparam, projections = self.projections_warp2paths(warp)
 
-            index_x_reparam = [j[0] for j in warp]
-            index_y_reparam = [j[1] for j in warp]
-            length = len(warp)
+        if (projections in self.pvar_dist_mem) and (not optim_partition):
+            return self.pvar_dist_mem[projections]
 
-            def dist(a, b):
-
-                i_0, i_N = index_x_reparam[a], index_x_reparam[b]+1
-                j_0, j_N = index_y_reparam[a], index_y_reparam[b]+1
-
-                if (i_0+self.i0, j_0+self.j0, i_N+self.i0, j_N+self.j0) in self.norm_pairs_memoizer:
-                    return self.norm_pairs_memoizer[(i_0+self.i0, j_0+self.j0, i_N+self.i0, j_N+self.j0)]
-
-                if (i_0+self.i0, i_N+self.i0) in self.sig_memoizer_x:
-                    sig_x = self.sig_memoizer_x[(i_0+self.i0, i_N+self.i0)]
-                else:
-                    sig_x = pvar_tools.signature(self.x[i_0:i_N], self.depth)
-                    self.sig_memoizer_x[(i_0+self.i0, i_N+self.i0)] = copy.deepcopy(sig_x)
-
-                if (j_0+self.j0, j_N+self.j0) in self.sig_memoizer_y:
-                    sig_y = self.sig_memoizer_y[(j_0+self.j0, j_N+self.j0)]
-                else:
-                    sig_y = pvar_tools.signature(self.y[j_0:j_N], self.depth)
-                    self.sig_memoizer_y[j_0+self.j0, j_N+self.j0] = copy.deepcopy(sig_y)
-
-                s_norm = pvar_tools.sig_norm(sig_x, sig_y, self.norm)
-                self.norm_pairs_memoizer[(i_0+self.i0, j_0+self.j0, i_N+self.i0, j_N+self.j0)] = copy.deepcopy(s_norm)
-                return s_norm
+        def dist(a, b):
+            i_0, i_N = index_x_reparam[a], index_x_reparam[b]
+            j_0, j_N = index_y_reparam[a], index_y_reparam[b]
+            return self.signature_norm_diff(i_0+self.i0, 
+                                            j_0+self.j0, 
+                                            i_N+self.i0, 
+                                            j_N+self.j0)
             
-            if self.pvar_advanced:
-                pvar, partition = pvar_backend.p_var_backbone(length, self.p, dist, compute_optim_partition, self.pth_root)
-            pvar, partition = pvar_backend.p_var_backbone_ref(length, self.p, dist, compute_optim_partition, self.pth_root)
-
+        if self.pvar_advanced:
+            res = pvar_backend.p_var_backbone(length, self.p, dist, optim_partition)
         else:
-            x_reparam, y_reparam = self.align(warp)
-            pvar, partition = pvar_tools.p_variation_distance(x_reparam, y_reparam, p=self.p, depth=self.depth, 
-                                                              norm=self.norm, optim_partition=compute_optim_partition, 
-                                                              pvar_advanced=self.pvar_advanced, pth_root=self.pth_root)
+            res = pvar_backend.p_var_backbone_ref(length, self.p, dist, optim_partition)
         
-        return pvar, partition
-        
+        self.pvar_dist_mem[projections] = res
+        return res        
+           
     def sense(self):
         return pybnb.minimize
 
@@ -117,59 +109,80 @@ class BnBWarping(pybnb.Problem):
             path will ensure to optimise over the right search space (instead of 
             optimising over all possible partial paths on the tree).
         """
+
         if self.path[-1] == (self.m-1,self.n-1):
             val, _ = self.distance(self.path)
         else:
             val = self.infeasible_objective()
+
         return val
+
+    def bound1(self, warp):
+        """inf_w(d_pvar(x \circ w_x, y \circ w_y)) >= ||S(x \circ w_x) - S(y \circ w_y)||"""
+
+        i, j = warp[0]
+        I, J = warp[-1]
+
+        return self.signature_norm_diff(i+self.i0, 
+                                        j+self.j0, 
+                                        I+self.i0, 
+                                        J+self.j0)
+
+    def bound2(self, warp):
+        """warped p-variation distance along path so far"""
+
+        b, _ = self.distance(warp)
+
+        return b
+
+    @lru_cache(maxsize=None)
+    def bound3_precomputation(self, I, J):
+
+        i = I - self.i0
+        j = J - self.j0
+
+        if (i>self.bc) and (j>self.bc): 
+
+            sub_x = self.x[i:]
+            sub_y = self.y[j:]
+
+            sub_problem = BnBWarping(x=sub_x, y=sub_y, p=self.p, depth=self.depth, norm=self.norm, root_node=(i,j), bc=1,
+                                     plot_2d=self.plot_2d, pvar_advanced=self.pvar_advanced, pvar_dist_mem=self.pvar_dist_mem)
+
+            return pybnb.Solver().solve(sub_problem, log=None, queue_strategy='depth').objective
+
+        return 0.
+
+    def bound3(self, warp):
+        """Dynamic programming bound (using solution to sub-problems)"""
+
+        i,j = warp[-1] # current position in lattice
+
+        return self.bound3_precomputation(i+self.i0,j+self.j0)
+
+    def compute_bound(self, warp):
+        # Cascading better and better bounds (when necessary)
+
+        b = self.bound1(warp)
+
+        if b < self.best_node_value:
+            b = self.bound2(warp)
+            if b < self.best_node_value:
+                b = (b**self.p + self.bound3(warp)**self.p)**(1./self.p)
+
+        return b
 
     def bound(self):
         """ This function is evaluated at a partial path and needs to be a lower bound on any complete 
             path originating from it, so it can decide if the search needs to continue 
             along a partial path based on the best known objective.
         """
-        
+
         #return self.unbounded_objective()
-
-        a = 0. # quantity to be added to soft bound to form tight bound (i.e. solution to sub-problem)
-        b, _ = self.distance(self.path) # warped p-variation distance along path so far (soft bound)
-        i,j = self.path[-1] # current position in lattice
-
-        if self.use_dp: # use tight bound (dynamic programming within BnB) if necessary
-
-            # if the soft bound is not enough then compute the tight bound
-            if b < self.best_node_value: 
-
-                # Boundary condition: use tight bound only if we are at least boundary_condition nodes away from root
-                if (i<self.boundary_condition) or (j<self.boundary_condition):
-                    a = 0.
-                else:
-                    # Bound memoization
-                    if (i+self.i0, j+self.j0) in self.bound_memoizer:
-                        a = self.bound_memoizer[(i+self.i0, j+self.j0)]
-                    else:
-                        sub_x = self.x[i:]
-                        sub_y = self.y[j:]
-
-                        sub_problem = BnBWarping(x=sub_x, y=sub_y, p=self.p, depth=self.depth, norm=self.norm, 
-                                                 root_node=(i,j),
-                                                 #root_node=(0,0),
-                                                 boundary_condition=1, use_dp=self.use_dp, 
-                                                 with_sig_memoization=self.with_sig_memoization, 
-                                                 pvar_advanced=self.pvar_advanced, pth_root=self.pth_root, 
-                                                 sig_memoizer_x=self.sig_memoizer_x, 
-                                                 sig_memoizer_y=self.sig_memoizer_y, 
-                                                 norm_pairs_memoizer=self.norm_pairs_memoizer, 
-                                                 bound_memoizer=self.bound_memoizer)
-
-                        results = pybnb.Solver().solve(sub_problem, log=None, queue_strategy='depth')
-
-                        a = results.objective
-                        self.bound_memoizer[(i+self.i0, j+self.j0)] = copy.deepcopy(a)
-
-        if self.pth_root:
-            return (b**self.p + a**self.p)**(1./self.p)
-        return b + a
+        return self.compute_bound(self.path)
+        
+    def notify_new_best_node(self, node, current):   
+        self.best_node_value = node.objective
 
     def save_state(self, node):
         node.state = list(self.path)
@@ -197,9 +210,6 @@ class BnBWarping(pybnb.Problem):
                 child = pybnb.Node()
                 child.state = self.path + [v]
                 yield child
-            
-    def notify_new_best_node(self, node, current):   
-        self.best_node_value = node.objective
 
     def plot_alignment(self, best_warp):
         if self.plot_2d:

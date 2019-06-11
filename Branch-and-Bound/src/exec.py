@@ -2,16 +2,6 @@ import sys
 sys.path.insert(0, '../backend')
 sys.path.insert(0, '../../data')
 
-#flag = sys.argv[1]
-#size = sys.argv[2]
-
-#if flag == '1':
-#    print('using tight bound sequentially \n')
-#    use_dp = True
-#else:
-#    print('using soft bound in parallel \n')
-#    use_dp = False
-
 import numpy as np
 import pybnb
 import time
@@ -20,20 +10,20 @@ import matplotlib.pyplot as plt
 from branch_and_bound_warped_pvar import BnBWarping
 from transformers import *
 
-idx = np.linspace(0, 6.28, 10)
+idx = np.linspace(0, 4*np.pi, 15)
+
 x = np.sin(idx)
 y = np.cos(idx)
 
 x = AddTime().fit_transform([x])[0]
 y = AddTime().fit_transform([y])[0]
 
-problem = BnBWarping(x, y, depth=2, norm='l1', p=1.5, root_node=(0, 0),
-                     plot_2d=False, boundary_condition=4, initialize_memoization=True,
-                     use_dp=True, with_sig_memoization=True, pvar_advanced=False, pth_root=True)
+problem = BnBWarping(x, y, depth=2, norm='l1', p=1.05, root_node=(0, 0), bc=1, 
+                     plot_2d=False, pvar_advanced=False, pvar_dist_mem=None)
 
 solver = pybnb.Solver()
 
-print(f'\n BnB algo is using {solver.worker_count} cores')
+print(f'\n BnB algo is using {solver.worker_count} core/s')
 
 results = solver.solve(problem, log=None, queue_strategy='depth')
 

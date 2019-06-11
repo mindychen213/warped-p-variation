@@ -4,9 +4,10 @@ import random
 import time
 import copy
 import numpy as np
+from numba import njit
 
-
-def p_var_backbone_ref(path_size, p, path_dist, optim_partition=False, pth_root=True):
+#@njit
+def p_var_backbone_ref(path_size, p, path_dist, optim_partition=False):
     # p-variation via Dynamic Programming
 
     if path_size == 0:
@@ -35,13 +36,11 @@ def p_var_backbone_ref(path_size, p, path_dist, optim_partition=False, pth_root=
     else:
         points = []
 
-    if pth_root:
-        return cum_p_var[-1]**(1./p), points
-    return cum_p_var[-1], points
+    return cum_p_var[-1]**(1./p), points
 
 
 
-def p_var_backbone(path_size, p, path_dist, optim_partition=False, pth_root=True):
+def p_var_backbone(path_size, p, path_dist, optim_partition=False):
     # Input:
     # * path_size >= 0 integer
     # * p >= 1 real
@@ -140,6 +139,4 @@ def p_var_backbone(path_size, p, path_dist, optim_partition=False, pth_root=True
             point_i = point_links[point_i]
         points.reverse()
 
-    if pth_root:
-        return run_p_var[-1]**(1./p), points
-    return run_p_var[-1], points
+    return run_p_var[-1]**(1./p), points

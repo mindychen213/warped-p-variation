@@ -27,9 +27,8 @@ class BruteForceWarpedPvar():
     """Takes in two piece-wise linear paths x and y as numpy arrays (lenght, dimension)
        dimension must be the same for bith x and y. length doesn't need to agree.
     """
-    def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, 
-                 parallelise=True, plot_2d=False, optim_partition=True, 
-                 pvar_advanced=False, pth_root=False):
+    def __init__(self, x, y, p, depth, norm='l1', augment=True, add_time=True, pth_root=False,
+                 parallelise=True, plot_2d=False, optim_partition=True, pvar_advanced=False):
 
         # lengths of the two curves
         self.m = x.shape[0]
@@ -53,7 +52,6 @@ class BruteForceWarpedPvar():
         self.plot_2d = plot_2d
         self.optim_partition = optim_partition
         self.pvar_advanced = pvar_advanced 
-        self.pth_root = pth_root
 
         # compute list of all possible warping paths (This can be done in advance and stored in a file 
         # that is read every time the code is called instea of recomputing every time)
@@ -136,21 +134,21 @@ class BruteForceWarpedPvar():
         y_reparam = np.array([self.y[k] for k in [j[1] for j in warp]])
         return x_reparam, y_reparam
 
-    def single_warped_pvar(self, warp, p, depth, norm, optim_partition, pvar_advanced, pth_root):
+    def single_warped_pvar(self, warp, p, depth, norm, optim_partition, pvar_advanced):
         """computes warped p-variation along one path with dynamic programming algo"""
         x_reparam, y_reparam = self.align(warp)
         pvar, partition = p_variation_distance(x_reparam, y_reparam, p, depth, norm, 
-                                               optim_partition, pvar_advanced, pth_root)
+                                               optim_partition, pvar_advanced)
         return pvar, partition
 
     def _global_warping_pvar(self, paths):
         """Brute force global warped p-variation distance with standard algo"""
         pvar_best, best_partition = self.single_warped_pvar(paths[0], self.p, self.depth, self.norm, 
-                                                            self.optim_partition, self.pvar_advanced, self.pth_root)
+                                                            self.optim_partition, self.pvar_advanced)
         best_warp = paths[0]
         for w in [tqdm(paths[1:], desc='Loop over all warps') if not self.parallelise else paths[1:]][0]:
             pvar, partition = self.single_warped_pvar(w, self.p, self.depth, self.norm, 
-                                                      self.optim_partition, self.pvar_advanced, self.pth_root)
+                                                      self.optim_partition, self.pvar_advanced)
             if pvar < pvar_best:
                 pvar_best = pvar
                 best_partition = partition
