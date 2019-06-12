@@ -46,19 +46,19 @@ class BnBWarping(pybnb.Problem):
         else:
             self.pvar_dist_mem = pvar_dist_mem
 
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=512)
     def signature_x(self, I, J):
         i_0 = I - self.i0
         i_N = J - self.i0
         return pvar_tools.signature(self.x[i_0:i_N+1], self.depth)
 
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=512)
     def signature_y(self, I, J):
         j_0 = I - self.j0
         j_N = J - self.j0
         return pvar_tools.signature(self.y[j_0:j_N+1], self.depth)
 
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=512)
     def signature_norm_diff(self, i, j, I, J):
         sig_x = self.signature_x(i, I)
         sig_y = self.signature_y(j, J)
@@ -135,7 +135,7 @@ class BnBWarping(pybnb.Problem):
 
         return b
 
-    @lru_cache(maxsize=None)
+    @lru_cache(maxsize=512)
     def bound3_precomputation(self, I, J):
 
         i = I - self.i0
