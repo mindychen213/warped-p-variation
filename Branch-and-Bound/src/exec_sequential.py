@@ -7,10 +7,10 @@ import pybnb
 import time
 import matplotlib.pyplot as plt
 
-from branch_and_bound_warped_pvar import BnBWarping
+from branch_and_bound_warped_pvar_sequential import BnBWarping
 from transformers import *
 
-idx = np.linspace(0, 4*np.pi, 14)
+idx = np.linspace(0, 4*np.pi, 10)
 
 x = np.sin(idx)
 y = np.cos(idx)
@@ -18,16 +18,8 @@ y = np.cos(idx)
 x = AddTime().fit_transform([x])[0]
 y = AddTime().fit_transform([y])[0]
 
-problem = BnBWarping(x=x, y=y, p=1.5, depth=2, norm='l1', root_node=(0,0), bc=4, plot_2d=True,
-                     #record_path=False,
-                     #pvar_dist_mem=None, 
-                     #pvar_mem_org=None, 
-                     #initial_time=None,
-                     use_bound1=True, 
-                     use_bound2=True, 
-                     use_bound3=False, 
-                     #cache_size=1024
-                     )
+problem = BnBWarping(x=x, y=y, p=1.5, depth=2, norm='l1', root_node=(0,0), bc=4, 
+                     plot_2d=True, pvar_dist_mem=None, cache_size=1024)
                  
 
 solver = pybnb.Solver()

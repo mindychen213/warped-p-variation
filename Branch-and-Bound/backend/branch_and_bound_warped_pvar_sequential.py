@@ -21,24 +21,14 @@ class BnBWarping(pybnb.Problem):
         encounters a node whose bound() is worse than the best objective() seen so far.
 
         ##################################################################################
-
-             This version is for visualizing results and computing stats
-                        (and use memoization, sequentially)
+                            
+                            Sequential computations using memoization
 
         ##################################################################################
 
     """
 
-    def __init__(self, x, y, p, depth, norm='l1', root_node=(0,0), bc=4, plot_2d=True,
-                 record_path=False,
-                 pvar_dist_mem=None, 
-                 pvar_mem_org=None, 
-                 initial_time=None,
-                 use_bound1=True, 
-                 use_bound2=True, 
-                 use_bound3=True, 
-                 cache_size=1024
-                 ):
+    def __init__(self, x, y, p, depth, norm='l1', root_node=(0,0), bc=4, plot_2d=True, pvar_dist_mem=None, cache_size=1024):
 
         """Inputs:
                    - x, y: input paths
@@ -47,12 +37,9 @@ class BnBWarping(pybnb.Problem):
                    - norm: norm for pairwise signature distance 
                    - root_node: node at the start of the tree
                    - bc: boundary conditon for starting using the tight bound
-                   - record_path: whether to store nodes and edges of the tree
                    - plot_2d: whether to plot results of 1-d or 2-d paths
                    - pvar_dist_mem: memoization dictionary for p-var distances
-                   - pvar_mem_org: memoization dictionary to monitor distribution of pvar_dist_mem
-                   - initial_time: starting time of the procedure
-                   - use_boundi: flag that determines whether to use or not bound i, for all i in {1,2,3}"""
+        """
 
         # input paths
         self.x = np.array(x)
@@ -76,40 +63,11 @@ class BnBWarping(pybnb.Problem):
         # boundary condition, i.e. necessary min distance from root node to start using tight bound
         self.bc = bc 
 
-        # This is a list that records the total size of the p-var cache as the algorithm runs.
-        self.total_size_of_pvar_cache = defaultdict(int)
-
         if pvar_dist_mem is None:
-
             #self.pvar_dist_mem = defaultdict(float)
-            self.pvar_dist_mem = pylru.lrucache(self.cache_size)
-
-            # This dictionary is for monitoring the structure of the memoization dictionary.
-            # It basically consists of keys representing lattice warps. At each key is 
-            # associated a list recording every time at which the key is hit during memoization.
-            self.pvar_mem_org = defaultdict(list)
-
+            self.pvar_dist_mem = pylru.lrucache(self.cache_size)  
         else: # feed to the class called recursively the current state of the mem dictionary
             self.pvar_dist_mem = pvar_dist_mem
-            self.pvar_mem_org = pvar_mem_org
-
-        # here we store all nodes and all edges of the tree that is being built (only for plots)
-        self.record_path = record_path
-        if self.record_path:
-            self.nodes = []
-            self.edges = [] 
-
-        ## here we use flags to specify what kind of bounds we want to use.
-        self.use_bound1 = use_bound1
-        self.use_bound2 = use_bound2
-        self.use_bound3 = use_bound3
-
-        ## starting time of procedure
-        if initial_time is None: 
-            self.initial_time = time.time()
-        else:
-            self.initial_time = initial_time
-
 
     def Delannoy_number(self, m, n):
         """Returns number number of paths from the southwest corner (0, 0) of a rectangular 
@@ -157,11 +115,6 @@ class BnBWarping(pybnb.Problem):
 
         length = len(warp)
         index_x_reparam, index_y_reparam, projections = self.projections_warp2paths(warp)
-
-        # record memoization size and monitor organization
-        passed_time = time.time()-self.initial_time
-        self.total_size_of_pvar_cache[passed_time] = len(self.pvar_dist_mem)
-        self.pvar_mem_org[projections].append(passed_time)
 
         if (projections in self.pvar_dist_mem) and (not optim_partition):          
             return self.pvar_dist_mem[projections]
@@ -213,7 +166,7 @@ class BnBWarping(pybnb.Problem):
         b, _ = self.distance(warp)
         return b
 
-    @lru_cache(maxsize=None)
+    #@lru_cache(maxsize=None)
     def bound3_precomputation(self, I, J):
 
         i = I - self.i0
@@ -225,16 +178,7 @@ class BnBWarping(pybnb.Problem):
             sub_y = self.y[j:]
 
             sub_problem = BnBWarping(x=sub_x, y=sub_y, p=self.p, depth=self.depth, norm=self.norm, root_node=(i,j), bc=1, 
-                                     plot_2d=self.plot_2d,
-                                     record_path=False, 
-                                     pvar_dist_mem=self.pvar_dist_mem, 
-                                     pvar_mem_org=self.pvar_mem_org, 
-                                     initial_time=self.initial_time,
-                                     use_bound1=self.use_bound1, 
-                                     use_bound2=self.use_bound2, 
-                                     use_bound3=self.use_bound3,
-                                     cache_size=self.cache_size
-                                     )
+                                     plot_2d=self.plot_2d, pvar_dist_mem=self.pvar_dist_mem, cache_size=self.cache_size)
 
             return pybnb.Solver().solve(sub_problem, log=None, queue_strategy='depth').objective
 
@@ -250,14 +194,11 @@ class BnBWarping(pybnb.Problem):
     def compute_bound(self, warp):
         # Cascading better and better bounds (when necessary)
 
-        if not self.use_bound1:
-            return self.unbounded_objective()
-
         b = self.bound1(warp)
 
-        if (b < self.best_node_value) and (self.use_bound2):
+        if b < self.best_node_value:
             b = self.bound2(warp)
-            if (b < self.best_node_value) and (self.use_bound3):
+            if b < self.best_node_value:
                 b = (b**self.p + self.bound3(warp)**self.p)**(1./self.p)
 
         return b
@@ -285,23 +226,11 @@ class BnBWarping(pybnb.Problem):
         if (i==self.m-1) and (j<self.n-1):
             child = pybnb.Node()
             child.state = self.path + [(i,j+1)]
-            
-            # record edges and nodes
-            if self.record_path:
-                self.nodes.append(tuple(child.state))
-                self.edges.append((tuple(self.path), tuple(child.state)))
-
             yield child
         
         elif (i<self.m-1) and (j==self.n-1):
             child = pybnb.Node()
             child.state = self.path + [(i+1,j)]
-
-            # record edges and nodes
-            if self.record_path:
-                self.nodes.append(tuple(child.state))
-                self.edges.append((tuple(self.path), tuple(child.state)))
-
             yield child
         
         elif (i<self.m-1) and (j<self.n-1):
@@ -309,12 +238,6 @@ class BnBWarping(pybnb.Problem):
             for v in nodes_update:
                 child = pybnb.Node()
                 child.state = self.path + [v]
-
-                # record edges and nodes
-                if self.record_path:
-                    self.nodes.append(tuple(child.state))
-                    self.edges.append((tuple(self.path), tuple(child.state)))
-
                 yield child
 
     def plot_alignment(self, best_warp):
