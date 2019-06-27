@@ -126,7 +126,7 @@ class BnBWarping(pybnb.Problem):
                                             j_0+self.j0, 
                                             i_N+self.i0, 
                                             j_N+self.j0)
-            
+
         res = pvar_backend.p_var_backbone_ref(length, self.p, dist, optim_partition)
         self.pvar_dist_mem[projections] = res
         return res        
@@ -166,7 +166,7 @@ class BnBWarping(pybnb.Problem):
         b, _ = self.distance(warp)
         return b
 
-    #@lru_cache(maxsize=None)
+    @lru_cache(maxsize=None)
     def bound3_precomputation(self, I, J):
 
         i = I - self.i0

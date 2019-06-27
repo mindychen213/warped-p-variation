@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from branch_and_bound_warped_pvar_parallel import BnBWarping
 from transformers import *
 
-idx = np.linspace(0, 4*np.pi, 10)
+idx = np.linspace(0, 4*np.pi, 11)
 
 x = np.sin(idx)
 y = np.cos(idx)

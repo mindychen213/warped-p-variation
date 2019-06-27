@@ -7,6 +7,6 @@
     "\\Branch-and-Bound\\src",
     "\\data"
   ],
-  "SelectedNode": "\\Branch-and-Bound\\backend\\branch_and_bound_warped_pvar.py",
+  "SelectedNode": "\\Branch-and-Bound\\src\\exec_parallel.py",
   "PreviewInSolutionExplorer": false
 }
