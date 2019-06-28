@@ -28,7 +28,8 @@ class BnBWarping(pybnb.Problem):
 
     """
 
-    def __init__(self, x, y, p, depth, norm='l1', root_node=(0,0), bc=4, plot_2d=True, pvar_dist_mem=None, cache_size=1024):
+    def __init__(self, x, y, p, depth, norm='l1', root_node=(0,0), bc=4, plot_2d=True, pvar_dist_mem=None, 
+                 cache_size=1024, allow_randomization=True, min_step=3, max_step=5):
 
         """Inputs:
                    - x, y: input paths
@@ -68,6 +69,10 @@ class BnBWarping(pybnb.Problem):
             self.pvar_dist_mem = pylru.lrucache(self.cache_size)  
         else: # feed to the class called recursively the current state of the mem dictionary
             self.pvar_dist_mem = pvar_dist_mem
+
+        self.allow_randomization = allow_randomization
+        self.min_step = min_step
+        self.max_step = max_step
 
     def Delannoy_number(self, m, n):
         """Returns number number of paths from the southwest corner (0, 0) of a rectangular 
@@ -178,7 +183,8 @@ class BnBWarping(pybnb.Problem):
             sub_y = self.y[j:]
 
             sub_problem = BnBWarping(x=sub_x, y=sub_y, p=self.p, depth=self.depth, norm=self.norm, root_node=(i,j), bc=1, 
-                                     plot_2d=self.plot_2d, pvar_dist_mem=self.pvar_dist_mem, cache_size=self.cache_size)
+                                     plot_2d=self.plot_2d, pvar_dist_mem=self.pvar_dist_mem, cache_size=self.cache_size, 
+                                     allow_randomization=self.allow_randomization, min_step=self.min_step, max_step=self.max_step)
 
             return pybnb.Solver().solve(sub_problem, log=None, queue_strategy='depth').objective
 
@@ -222,19 +228,38 @@ class BnBWarping(pybnb.Problem):
     def branch(self):
         
         i,j = self.path[-1]
+
+        # branching randomization
+        if self.allow_randomization:
+            k = np.random.randint(self.min_step, self.max_step)
+        else:
+            k = 1
+
         
         if (i==self.m-1) and (j<self.n-1):
+            if j+k >= self.n-1:
+                k = 1
             child = pybnb.Node()
-            child.state = self.path + [(i,j+1)]
+            child.state = self.path + [(i,j+k)]
             yield child
         
         elif (i<self.m-1) and (j==self.n-1):
+            if i+k >= self.m-1:
+                k = 1
             child = pybnb.Node()
-            child.state = self.path + [(i+1,j)]
+            child.state = self.path + [(i+k,j)]
             yield child
         
-        elif (i<self.m-1) and (j<self.n-1):
-            nodes_update = [(i+1,j+1), (i,j+1), (i+1,j)]
+        elif (i<self.m-1) and (j<self.n-1):            
+            if i+k >= self.m-1:
+                k_i = 1
+            else:
+                k_i = k
+            if j+k >= self.n-1:
+                k_j = 1
+            else:
+                k_j = k
+            nodes_update = [(i+k_i,j+k_j), (i,j+k_j), (i+k_i,j)]
             for v in nodes_update:
                 child = pybnb.Node()
                 child.state = self.path + [v]
