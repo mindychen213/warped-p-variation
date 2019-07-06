@@ -42,11 +42,11 @@ class Warp:
                 distances[i,j] = self.d(self.x[j], self.y[i])
         return distances
         
-    def distance_cost_plot(self, distances):
+    def distance_cost_plot(self, distances, labels):
         im = plt.imshow(distances, interpolation='nearest', cmap='Reds') 
         plt.gca().invert_yaxis()
-        plt.xlabel("X")
-        plt.ylabel("Y")
+        plt.xlabel(labels[0])
+        plt.ylabel(labels[1])
         plt.grid()
         plt.colorbar()
         plt.title('distances')
@@ -96,19 +96,19 @@ class Warp:
             self.cost += self.d(self.x[p], self.y[q])
         self.cost = self.final_operator(self.cost)
 
-    def plot_lattice(self):
-        self.distance_cost_plot(self.D)
-        plt.plot([e[0] for e in self.warping_path], [e[1] for e in self.warping_path])
-        plt.title('Warping')
+    def plot_lattice(self, title='Warping', labels=['X', 'Y']):
+        self.distance_cost_plot(self.D, labels)
+        plt.plot([e[0] for e in self.warping_path], [e[1] for e in self.warping_path], linestyle='--', lw=4)
+        plt.title(title)
     
-    def plot_alignment(self):
+    def plot_alignment(self, labels=['x', 'y'], title='Alignement'):
         if self.plot_2d:
-            plt.plot(self.x.T[0], self.x.T[1], 'bo-' ,label = 'x')
-            plt.plot(self.y.T[0], self.y.T[1], 'g^-', label = 'y')
+            plt.plot(self.x.T[0], self.x.T[1], 'bo-' ,label=labels[0])
+            plt.plot(self.y.T[0], self.y.T[1], 'g^-', label=labels[1])
         else:
-            plt.plot(self.x, 'bo-' ,label = 'x')
-            plt.plot(self.y, 'g^-', label = 'y')
-        plt.title('Alignment')
+            plt.plot(self.x, 'bo-' ,label=labels[0])
+            plt.plot(self.y, 'g^-', label=labels[1])
+        plt.title(title)
         plt.legend()
         for [map_x, map_y] in self.warping_path:
             if self.plot_2d:

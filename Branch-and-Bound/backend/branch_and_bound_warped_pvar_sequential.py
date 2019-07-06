@@ -155,7 +155,7 @@ class BnBWarping(pybnb.Problem):
         return val
 
     def bound1(self, warp):
-        """inf_w(d_pvar(x \circ w_x, y \circ w_y)) >= ||S(x \circ w_x) - S(y \circ w_y)||"""
+        """||S(x \circ w_x) - S(y \circ w_y)||"""
 
         i, j = warp[0]
         I, J = warp[-1]
